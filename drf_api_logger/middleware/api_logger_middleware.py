@@ -9,8 +9,7 @@ from django.conf import settings
 import traceback
 from drf_api_logger import API_LOGGER_SIGNAL
 from drf_api_logger.start_logger_when_server_starts import LOGGER_THREAD
-from drf_api_logger.utils import get_headers, get_client_ip, mask_sensitive_data
-
+from drf_api_logger.utils import get_headers, get_client_ip, mask_sensitive_data, get_app_name_from_url
 
 """
 File: api_logger_middleware.py
@@ -130,7 +129,10 @@ class APILoggerMiddleware:
 
                 api = self.get_api_uri(request)
 
+                app_name = get_app_name_from_url(api)
+
                 data = dict(
+                    app_name=app_name,
                     api=mask_sensitive_data(api, mask_api_parameters=True),
                     headers=mask_sensitive_data(headers),
                     body=mask_sensitive_data(request_data),
@@ -158,7 +160,7 @@ class APILoggerMiddleware:
                 error=repr(exception),
                 tb=traceback.format_exc()
             )
-            print(message)
+
             api = self.get_api_uri(request)
 
             request_data = ''
@@ -166,8 +168,9 @@ class APILoggerMiddleware:
                 request_data = json.loads(request.body) if request.body else ''
             except:
                 pass
-
+            app_name = get_app_name_from_url(api)
             data = dict(
+                app_name=app_name,
                 api=mask_sensitive_data(api, mask_api_parameters=True),
                 headers=mask_sensitive_data(get_headers(request=request)),
                 body=mask_sensitive_data(request_data),
@@ -175,7 +178,7 @@ class APILoggerMiddleware:
                 client_ip_address=get_client_ip(request),
                 response=mask_sensitive_data(message),
                 status_code=500,
-                execution_time=0, #as this method run independant execution time is not there
+                execution_time=0,  # as this method run independant execution time is not there
                 added_on=timezone.now()
             )
             self.save_data(data, request_data)
@@ -192,4 +195,3 @@ class APILoggerMiddleware:
                 LOGGER_THREAD.put_log_data(data=d)
         if self.DRF_API_LOGGER_SIGNAL:
             API_LOGGER_SIGNAL.listen(**data)
-

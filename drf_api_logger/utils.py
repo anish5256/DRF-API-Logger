@@ -1,5 +1,6 @@
 import re
 from django.conf import settings
+from django.urls import resolve
 
 SENSITIVE_KEYS = ['password', 'token', 'access', 'refresh']
 if hasattr(settings, 'DRF_API_LOGGER_EXCLUDE_KEYS'):
@@ -76,3 +77,39 @@ def mask_sensitive_data(data, mask_api_parameters=False):
             data[key] = [mask_sensitive_data(item) for item in data[key]]
 
     return data
+
+
+def strip_base_url(url):
+    pattern = r"^https?:\/\/([a-zA-Z0-9\-\.]+)(:\d+)?"
+    stripped_url = re.sub(pattern, "", url)
+    return stripped_url
+
+def get_app_name_from_url(url):
+    try:
+        stripped_url = strip_base_url(url)
+        resolver_match = resolve(stripped_url)
+        view_func = resolver_match.func
+        module_name = view_func.__module__
+        app_name = module_name.split(".")[0]
+        return app_name
+    except Exception as e:
+        return "Unknown"
+
+
+
+def strip_base_url(url):
+    pattern = r"^https?:\/\/([a-zA-Z0-9\-\.]+)(:\d+)?(?=\/|$)"
+    stripped_url = re.sub(pattern, "", url)
+    return stripped_url
+
+
+def get_app_name_from_url(url):
+    try:
+        stripped_url = strip_base_url(url)
+        resolver_match = resolve(stripped_url)
+        view_func = resolver_match.func
+        module_name = view_func.__module__
+        app_name = module_name.split(".")[0]
+        return app_name
+    except Exception as e:
+        return "Unknown"

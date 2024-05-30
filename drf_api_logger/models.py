@@ -1,12 +1,12 @@
 from django.db import models
 
-from drf_api_logger.utils import database_log_enabled
-
+from drf_api_logger.utils import database_log_enabled, get_app_name_from_url
 
 if database_log_enabled():
     """
     Load models only if DRF_API_LOGGER_DATABASE is True
     """
+
     class BaseModel(models.Model):
         id = models.BigAutoField(primary_key=True)
 
@@ -30,11 +30,20 @@ if database_log_enabled():
         status_code = models.PositiveSmallIntegerField(help_text='Response status code', db_index=True)
         execution_time = models.DecimalField(decimal_places=5, max_digits=8,
                                              help_text='Server execution time (Not complete response time.)')
+        app_name = models.CharField(null=True, blank=True)
 
         def __str__(self):
             return self.api
+
+        def save(self, *args, **kwargs):
+            self.app_name = get_app_name_from_url(self.api)
+            super().save(*args, **kwargs)
 
         class Meta:
             db_table = 'drf_api_logs'
             verbose_name = 'API Log'
             verbose_name_plural = 'API Logs'
+
+            indexes = [
+                models.Index(fields=['app_name']),
+            ]
