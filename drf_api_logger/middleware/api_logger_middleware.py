@@ -143,7 +143,7 @@ class APILoggerMiddleware:
                     execution_time=time.time() - start_time,
                     added_on=timezone.now()
                 )
-                self.save_data(self, data, request_data)
+                self.save_data(data, request_data)
             else:
                 return response
         else:
